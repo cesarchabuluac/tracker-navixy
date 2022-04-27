@@ -17,9 +17,9 @@ class TrackerNavixy
     public function __construct()
     {
         $this->baseUri = env('API_NAVIXY');
-        $id = auth()->user()->id;
-        $user = User::find($id);
-        $this->hashNavixy = $user->hash_token_navixy;
+        // $id = auth()->user()->id;
+        // $user = User::find($id);
+        // $this->hashNavixy = $user->hash_token_navixy;
     }
 
     /**
@@ -78,6 +78,11 @@ class TrackerNavixy
      * @return  [type]  [return description]
      */
     public function listVehiclesNavixy () {
+
+        $id = auth()->user()->id;
+        $user = User::find($id);
+        $this->hashNavixy = $user->hash_token_navixy;
+
         return $this->makeRequest(
             "GET",
             "vehicle/list/",

@@ -21,5 +21,5 @@ Route::post('register', [RegisterController::class, 'register']);
 Route::post('login', [RegisterController::class, 'login']);
 
 Route::middleware('auth:sanctum')->group( function () {   
-    Route::get('vehicle', 'App\Http\Controllers\API\VehicleController@index');
+    Route::get('tracking', 'App\Http\Controllers\API\VehicleController@index');
 });

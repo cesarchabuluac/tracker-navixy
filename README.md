@@ -1,64 +1,75 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400"></a></p>
+## Conexión a Navixy
 
-<p align="center">
-<a href="https://travis-ci.org/laravel/framework"><img src="https://travis-ci.org/laravel/framework.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Obtiene las ultimas posiciones de los vehiculos enviados a la api.
+Para que pueda funcionar debe de existir un usuario de la aplicación para poder autenticarse a la api de navixy.
 
-## About Laravel
+### Pasos a seguir
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- composer install
+- npm install
+- npm run dev
+- php artisan migrate
+- Crear un usuario con contraseña nativo de la aplicación ingresando a la ruta de la api o usando el endpoint de la api **api/register,**
+- Configurar el .env **cp .env.example .env**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Configurar el env para la conexión a la api navixy
+- API_NAVIXY=https://api.navixy.com/v2/
+- API_NAVIXY_LOGIN=waltmart@eguard.mx
+- API_NAVIXY_PASSWORD=123456
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Funcionalidad
 
-## Learning Laravel
+La api de autenticación obtiene un token lo cual se debe configurar en las cabeceras de la petición. Una vez autenticado
+se hace la peticion al endpoint de tracking **api/tracking**
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Tracking
+- Enviar Cabeceras de token
+- Enviar parametro de nombre trackers = [1,2,3,4,5,6.....]
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+Al hacer la peticion al endpoint de tracking, primero valida las credenciales del servicio para hacer la autenticación a navixy
+una vez autenticado consulta la lista de vehiculos de navixy lo cual inserta en la tabla de vehicles, al mismo tiempo consulta el endpoint de navixy
+enviandole los tracker_id al endpoint y obtiene la ultima posición y los datos se guarda en la tabla de vehicle_trackers, posterior se obtiene 
+los resultados de la siguiente manera:
 
-## Laravel Sponsors
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+        {
+            "success": true,
+            "data": {
+                "0": {
+                    "id": 90,
+                    "vehicle_id": 107325,
+                    "source_id": 442052,
+                    "lat": "19.612133",
+                    "lng": "-99.059903",
+                    "last_updated": "2022-04-27 10:56:41",
+                    "movement_status": "moving",
+                    "created_at": "2022-04-27T15:56:45.000000Z",
+                    "updated_at": "2022-04-27T15:56:45.000000Z",
+                    "vehicle": {
+                        "id": 107325,
+                        "icon_color": "1E96DC",
+                        "tracker_id": 1016172,
+                        "tracker_label": "66ap4z ram 2011 gasolina",
+                        "label": "RAM",
+                        "max_speed": null,
+                        "model": "",
+                        "type": "truck",
+                        "subtype": null,
+                        "color": null,
+                        "additional_info": null,
+                        "reg_number": "66AP4Z",
+                        "vin": "",
+                        "created_at": null,
+                        "updated_at": null
+                    }
+                },
+            },
+            "message": "Tracking Vehicles retrieved successfully"
+        }
 
-### Premium Partners
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
 
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The Laravel framework is open-sourced software licensed under the **MIT license**.

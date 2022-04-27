@@ -22,6 +22,7 @@ trait ExternalServices
             $isJsonRequest ? 'json' : 'form_params' => $formParams,
             'headers' => $headers,
             'query' => $queryParams,
+            'http_errors' => false,
         ]);
 
         $response = $response->getBody()->getContents();
