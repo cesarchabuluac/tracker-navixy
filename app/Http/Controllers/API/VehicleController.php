@@ -35,7 +35,9 @@ class VehicleController extends BaseController
 
             //Create Vehicles on database local
             $data = [];
-            collect($response['list'])->each(function ($item) use (&$data) {
+            $trackersID = [];
+            collect($response['list'])->each(function ($item) use (&$data, &$trackersID) {
+                $trackersID[] = $item['tracker_id'];
                 $vehicle = Vehicle::find($item['id']);
                 if (empty($vehicle)) {
                     $data[] = [
@@ -75,7 +77,7 @@ class VehicleController extends BaseController
             }
 
             //Get tracking       
-            $response = $service->listTracking($request->trackers);
+            $response = $service->listTracking($trackersID);
             $response = json_decode($response, true);
 
             if (boolval($response['success'])) {
