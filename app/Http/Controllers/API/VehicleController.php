@@ -41,7 +41,7 @@ class VehicleController extends BaseController
                     if (!empty($item['tracker_id'])) {
                         $trackersID[] = $item['tracker_id'];
                     }
-                    $vehicle = Vehicle::find($item['id']);
+                    $vehicle = Vehicle::where('tracker_id', $item['tracker_id'])->first();
                     if (empty($vehicle)) {
                         $data[] = [
                             'id' => $item['id'],
@@ -109,7 +109,7 @@ class VehicleController extends BaseController
                     VehicleTracker::insert($data);
 
                     $vehicles = VehicleTracker::with('vehicle')->whereIn('vehicle_id', $vehicleIds)->latest('last_updated')->get()->unique('vehicle_id');
-
+                    Log::info($vehicles);
                     DB::commit();
 
                     return $vehicles;
