@@ -18,7 +18,7 @@ class CarController extends Controller
      */
     public function index()
     {
-        $cars = Car::all();
+        $cars = Car::withTrashed()->orderBy('id', 'DESC')->get();
         return view('cars.index', compact('cars'));
     }
 
@@ -72,9 +72,15 @@ class CarController extends Controller
      * @param  \App\Models\Car  $car
      * @return \Illuminate\Http\Response
      */
-    public function edit(Car $car)
+    public function edit($id)
     {
-        //
+        $car = Car::find($id);
+
+        if(empty($car)) {
+            return redirect(route('cars.index'))->with('warning', 'Vehículo no encontrado');
+        }
+
+        return view('cars.edit', compact('car'));
     }
 
     /**
@@ -84,9 +90,28 @@ class CarController extends Controller
      * @param  \App\Models\Car  $car
      * @return \Illuminate\Http\Response
      */
-    public function update(UpdateCarRequest $request, Car $car)
+    public function update(UpdateCarRequest $request, $id)
     {
-        //
+
+        $car = Car::find($id);
+
+        if(empty($car)) {
+            return redirect(route('cars.index'))->with('warning', 'Vehículo no encontrado');
+        }
+
+        $input = $request->all();
+        $input['video'] = isset($input['video']) ? boolval($input['video']) : false;
+
+        try {
+            DB::beginTransaction();
+            $car->update($input);
+            DB::commit();
+            return redirect(route('cars.index'))->with('success', 'Vehículo guardado con éxito');
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::info($ex->getMessage());
+            return redirect(route('cars.index'))->with('danger', $ex->getMessage());
+        }
     }
 
     /**
@@ -95,8 +120,22 @@ class CarController extends Controller
      * @param  \App\Models\Car  $car
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Car $car)
+    public function destroy($id)
     {
-        //
+        $car = Car::withTrashed()->find($id);
+        if (empty($car)) {
+            return response()->json(['data' => [], 'success' => false, 'message' => 'Vehículo no encontrado']);
+        }
+
+        $message = "";
+        if (!$car->deleted_at) {
+            $car->delete();
+            $message = "Vehículo desactivado con éxito";
+        } else {
+            $car->restore();
+            $message = "Vehículo activado con éxito";
+        }
+
+        return response()->json(['data' => $car, 'success' => true, 'message' => $message]);
     }
 }
