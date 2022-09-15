@@ -23,6 +23,7 @@ class User extends Authenticatable
         'password',
         'api_token',
         'hash_token_navixy',
+        'hash_session_semov',
     ];
 
     /**

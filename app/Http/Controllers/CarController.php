@@ -41,7 +41,7 @@ class CarController extends Controller
     public function store(StoreCarRequest $request)
     {
         $input = $request->all();
-        $input['video'] = boolval($input['video']);
+        $input['video'] = isset($input['video']) ? boolval($input['video']) : false;
 
         try {
             DB::beginTransaction();

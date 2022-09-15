@@ -9,8 +9,10 @@ use App\Models\Vehicle;
 use App\Module\TrackerNavixy;
 use App\Http\Requests\StoreVehicleRequest;
 use App\Http\Requests\UpdateVehicleRequest;
+use App\Models\Car;
 use App\Models\User;
 use App\Models\VehicleTracker;
+use App\Module\TrackerSemov;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\DB;
@@ -20,12 +22,31 @@ use Illuminate\Support\Facades\Session;
 class VehicleController extends BaseController
 {
 
+    /**
+     * [setHashToken description]
+     *
+     * @param   [type]  $token  [$token description]
+     *
+     * @return  [type]          [return description]
+     */
     private function setHashToken($token)
     {
         auth()->user()->update(['hash_token_navixy' => $token]);
     }
 
-    private function getTracking(TrackerNavixy $service, Request $request)
+    /**
+     * [setHasSessionSemov description]
+     *
+     * @param   [type]  $session  [$session description]
+     *
+     * @return  [type]            [return description]
+     */
+    private function setHasSessionSemov($session)
+    {
+        auth()->user()->update(['hash_session_semov' => $session]);
+    }
+
+    private function getTracking(TrackerNavixy $service, TrackerSemov $serviceSemov, Request $request)
     {
         $response = $service->listVehiclesNavixy();
         $response = json_decode($response, true);
@@ -83,7 +104,7 @@ class VehicleController extends BaseController
                 //Get tracking       
                 $response = $service->listTracking($trackersID);
                 $response = json_decode($response, true);
-
+                // Log::info(json_encode($response));
                 if (boolval($response['success'])) {
 
                     //Create Vehicles Tracking on database local
@@ -98,6 +119,8 @@ class VehicleController extends BaseController
                                 'source_id' => $item['source_id'],
                                 'lat' => $item['gps']['location']['lat'],
                                 'lng' => $item['gps']['location']['lng'],
+                                'speed' => $item['gps']['speed'],
+                                'alt' => $item['gps']['alt'],
                                 'last_updated' => $item['last_update'],
                                 'movement_status' => $item['movement_status'],
                                 'created_at' => Carbon::now(),
@@ -108,11 +131,121 @@ class VehicleController extends BaseController
 
                     VehicleTracker::insert($data);
 
-                    $vehicles = VehicleTracker::with('vehicle')->whereIn('vehicle_id', $vehicleIds)->latest('last_updated')->get()->unique('vehicle_id');
-                    Log::info($vehicles);
+                    // $vehicles = VehicleTracker::with('vehicle')->whereIn('vehicle_id', $vehicleIds)->latest('last_updated')->get()->unique('vehicle_id');
+
+                    //Get semov vehicles
+                    $userVehicle = $serviceSemov->listUserVehicle();
+                    $userVehicle = json_decode($userVehicle, true);
+                    // Log::info(json_encode($userVehicle));
+                    $cars = [];
+                    if (!empty($userVehicle)) {
+                        if (!empty($userVehicle['vehicles'])) {
+                            foreach ($userVehicle['vehicles'] as $key => $deviceList) {
+                                foreach ($deviceList['dl'] as $key => $device) {
+                                    $car = Car::where('imei', $device['id'])->first();
+                                    if (!empty($car)) {
+                                        $car['alarm'] = false;
+                                        $cars[] = $car;
+
+                                        //Url video
+                                        if ($car['id_navixy'] && $car['video']) {
+
+                                            $vehicle = Vehicle::with('trackings')->where('tracker_id', $car['id_navixy'])->first();
+                                            if(!empty($vehicle)) {
+                                                if(!empty($vehicle->trackings)) {
+                                                    $last = $vehicle->trackings->last();
+                                                    $car['Fecha'] = Carbon::parse($last['last_updated'])->format('d/m/Y');
+                                                    $car['Hora'] = Carbon::parse($last['last_updated'])->format('H:i:s');
+                                                    $car['Latitud'] = $last['lat'];
+                                                    $car['Longitud'] = $last['lng'];
+                                                    $car['Velocidad'] = $last['speed'] > 0 ? $last['sp'] / 10 : 0;
+                                                    $car['Altitud'] = $last['alt'];
+                                                }
+                                            }
+                                            
+                                            $url_video = env('API_VIDEO_SEMOV');
+                                            $url_video = str_replace('{IMEI}', $car['imei'], $url_video);
+                                            Log::info($url_video);
+                                            $car['UrlCamara'] = $url_video;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    //Device Status
+                    $userDeviceStatus = $serviceSemov->listDeviceStatus();
+                    $userDeviceStatus = json_decode($userDeviceStatus, true);
+                    // Log::info(json_encode($userDeviceStatus));
+                    if (!empty($userDeviceStatus)) {
+                        foreach ($userDeviceStatus['status'] as $key => $device) {
+                            foreach ($cars as $key => $car) {
+                                if ($car['imei'] == $device['id'] && empty($car['id_navixy'])) {
+                                    $car['Fecha'] = Carbon::parse($device['gt'])->format('d/m/Y');
+                                    $car['Hora'] = Carbon::parse($device['gt'])->format('H:i:s');
+                                    $car['Latitud'] = $device['lat'];
+                                    $car['Longitud'] = $device['lng'];
+                                    $car['Velocidad'] = $device['sp'] > 0 ? $device['sp'] / 10 : 0;
+                                }
+                            }
+                        }
+                    }
+
+                    //Device Alarm
+                    $userVehicleAlarm = $serviceSemov->listVehicleAlarm();
+                    $userVehicleAlarm = json_decode($userVehicleAlarm, true);
+                    if (!empty($userVhicleAlarm)) {
+                        if (!empty($userVhicleAlarm['alarmlist'])) {
+                            foreach ($cars as $key => $car) {
+                                foreach ($userVehicleAlarm as $key => $alarm) {
+                                    if ($car['imei'] == $alarm['DevIDNO'] && $alarm['type'] == 19) {
+                                        $car['alarm'] = true;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    $json = collect($cars)->map(function ($item) {
+                        return [
+                            "NombreProveedor" => $item['provider_name'],
+                            "IDEmpresa" => 0,
+                            "Empresa" => $item['company'],
+                            "Ruta" => $item['route'],
+                            "Fecha" => $item['Fecha'],
+                            "Hora" => $item['Hora'],
+                            "VIN" => $item['vin'],
+                            "EcoNumero" => $item['economic_number'],
+                            "Placa" => $item['license_plate'],
+                            "IMEI" => $item['imei'],
+                            "Latitud" => $item['Latitud'] ?? 0,
+                            "Longitud" => $item['Longitud'] ?? 0,
+                            "Altitud" => $item['Altitud'] ?? 0,
+                            "Velocidad" => $item['Velocidad'] ?? 0,
+                            "Direccion" => 0,
+                            "BotonPanico" => $item['alarm'],
+                            "UrlCamara" => $item['UrlCamara'],
+                            "TipodeUnidad" => $item['unit_type'],
+                            "Marca" => $item['brand'],
+                            "Submarca" => $item['sub_brand'],
+                            "Fechamodelo" => $item['model_date'],
+                            "Zona" => $item['zone'],
+                            "Delegacion" => $item['delegation'],
+                            "Municipio" => $item['municipality'],
+                            "Numconsesion" => $item['concession_number'],
+                            "Activo" => !empty($item['deleted_at']) ? 1 : 0,
+                            "CartaEqui" => "http://www.semov.net:8088/Carta.pdf",
+                            "FechaIns" => null,
+                            "FechaVen" => null
+                        ];
+                    });
+
+
+
                     DB::commit();
 
-                    return $vehicles;
+                    return $json;
                 } else {
                     DB::rollBack();
                     return $response;
@@ -138,16 +271,25 @@ class VehicleController extends BaseController
 
             //Service Navixy
             $service = app()->make(TrackerNavixy::class);
+            $serviceSemov = app()->make(TrackerSemov::class);
             $user = User::find(auth()->user()->id);
 
+            //Set has semov
+            $resultSemov = $serviceSemov->authSemov();
+            $result = json_decode($resultSemov, true);
+            if (isset($result['jsession'])) {
+                $this->setHasSessionSemov($result['jsession']);
+            }
+
+
             if ($user->hash_token_navixy) {
-                $result = $this->getTracking($service, $request);
+                $result = $this->getTracking($service, $serviceSemov, $request);
 
                 if (isset($result['success']) && !boolval($result['success'])) {
                     $response = $service->loginNavixy();
                     if (boolval($response['success'])) {
                         $this->setHashToken($response['hash']);
-                        $result = $this->getTracking($service, $request);
+                        $result = $this->getTracking($service, $serviceSemov, $request);
                         return $this->sendResponse($result, "Tracking Vehicles retrieved successfully");
                     } else {
                         return $this->sendError($response['status']['description'], $response['errors'], 500);
@@ -160,7 +302,7 @@ class VehicleController extends BaseController
                 if (boolval($response['success'])) {
 
                     $this->setHashToken($response['hash']);
-                    $result = $this->getTracking($service, $request);
+                    $result = $this->getTracking($service, $serviceSemov, $request);
                     return $this->sendResponse($result, "Tracking Vehicles retrieved successful");
                 } else {
                     return $this->sendError($response['status']['description'], $response['errors'], 500);
@@ -169,6 +311,22 @@ class VehicleController extends BaseController
         } catch (Exception $ex) {
             DB::rollBack();
             return $this->sendError($ex->getMessage(), 500);
+        }
+    }
+
+    public function authSemov(Request $request)
+    {
+        try {
+
+            //Service Semov
+            $service = app()->make(TrackerSemov::class);
+            $result = $service->authSemov();
+            $result = json_decode($result, true);
+            if (isset($result['jsession'])) {
+                $this->setHasSessionSemov($result['jsession']);
+            }
+        } catch (Exception $ex) {
+            Log::warning($ex->getMessage());
         }
     }
 }

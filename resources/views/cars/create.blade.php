@@ -21,7 +21,7 @@
                             <div class="form-row">
                                 <div class="form-group col-md-4">
                                     <label for="provider_name">Proveedor</label>
-                                    <input type="text" class="form-control" id="provider_name" name="provider_name" placeholder="Nombre del Proveedor" value="{{old('provider_name')}}" required>
+                                    <input type="text" class="form-control" id="provider_name" name="provider_name" placeholder="Nombre del Proveedor" value="{{old('provider_name')}}" required autofocus>
                                     <div class="invalid-feedback">
                                         Por favor complete el nombre del proveedor
                                     </div>
