@@ -214,9 +214,10 @@ class VehicleController extends BaseController
                         }
                     }
 
+                    // Log::info(json_encode($cars));
                     $json = collect($cars)->map(function ($item) {
                         return [
-                            "EsNavixy" => $item['is_navixy'],
+                            // "EsNavixy" => $item['is_navixy'],
                             "NombreProveedor" => $item['provider_name'],
                             "IDEmpresa" => 0,
                             "Empresa" => $item['company'],
