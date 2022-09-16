@@ -148,8 +148,7 @@ class VehicleController extends BaseController
                                         $cars[] = $car;
 
                                         //Url video
-                                        if ($car['id_navixy'] && $car['video']) {
-
+                                        if ($car['id_navixy']) {
                                             $vehicle = Vehicle::with('trackings')->where('tracker_id', $car['id_navixy'])->first();
                                             if(!empty($vehicle)) {
                                                 if(!empty($vehicle->trackings)) {
@@ -162,10 +161,11 @@ class VehicleController extends BaseController
                                                     $car['Altitud'] = $last['alt'];
                                                 }
                                             }
-                                            
+                                        }
+
+                                        if($car['video']) {
                                             $url_video = env('API_VIDEO_SEMOV');
                                             $url_video = str_replace('{IMEI}', $car['imei'], $url_video);
-                                            Log::info($url_video);
                                             $car['UrlCamara'] = $url_video;
                                         }
                                     }
