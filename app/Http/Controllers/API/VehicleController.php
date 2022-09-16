@@ -50,6 +50,7 @@ class VehicleController extends BaseController
     {
         $response = $service->listVehiclesNavixy();
         $response = json_decode($response, true);
+        Log::info(json_encode($response));
         try {
             if (boolval($response['success'])) {
 
@@ -62,38 +63,41 @@ class VehicleController extends BaseController
                     if (!empty($item['tracker_id'])) {
                         $trackersID[] = $item['tracker_id'];
                     }
-                    $vehicle = Vehicle::where('tracker_id', $item['tracker_id'])->first();
-                    if (empty($vehicle)) {
-                        $data[] = [
-                            'id' => $item['id'],
-                            'icon_color' => $item['icon_color'] ?? null,
-                            'tracker_id' => $item['tracker_id'] ?? null,
-                            'tracker_label' => $item['tracker_label'] ?? null,
-                            'label' => $item['label'] ?? null,
-                            'model' => $item['model'] ?? null,
-                            'type' => $item['type'] ?? null,
-                            'subtype' => $item['subtype'] ?? null,
-                            'color' => $item['color'] ?? null,
-                            'additional_info' => $item['additional_info'] ?? null,
-                            'reg_number' => $item['reg_number'] ?? null,
-                            'vin' => $item['vin'] ?? null,
-                            'created_at' => Carbon::now(),
-                            'updated_at' => Carbon::now(),
-                        ];
-                    } else {
-                        $vehicle->icon_color = $item['icon_color'] ?? null;
-                        $vehicle->tracker_id = $item['tracker_id'] ?? null;
-                        $vehicle->tracker_label = $item['tracker_label'] ?? null;
-                        $vehicle->label = $item['label'] ?? null;
-                        $vehicle->model = $item['model'] ?? null;
-                        $vehicle->type = $item['type'] ?? null;
-                        $vehicle->subtype = $item['subtype'] ?? null;
-                        $vehicle->color = $item['color'] ?? null;
-                        $vehicle->additional_info = $item['additional_info'] ?? null;
-                        $vehicle->reg_number = $item['reg_number'] ?? null;
-                        $vehicle->vin = $item['vin'] ?? null;
-                        $vehicle->updated_at = Carbon::now();
-                        $vehicle->save();
+
+                    if (!empty($item['tracker_id'])) {
+                        $vehicle = Vehicle::where('tracker_id', $item['tracker_id'])->first();
+                        if (empty($vehicle)) {
+                            $data[] = [
+                                'id' => $item['id'],
+                                'icon_color' => $item['icon_color'] ?? null,
+                                'tracker_id' => $item['tracker_id'] ?? null,
+                                'tracker_label' => $item['tracker_label'] ?? null,
+                                'label' => $item['label'] ?? null,
+                                'model' => $item['model'] ?? null,
+                                'type' => $item['type'] ?? null,
+                                'subtype' => $item['subtype'] ?? null,
+                                'color' => $item['color'] ?? null,
+                                'additional_info' => $item['additional_info'] ?? null,
+                                'reg_number' => $item['reg_number'] ?? null,
+                                'vin' => $item['vin'] ?? null,
+                                'created_at' => Carbon::now(),
+                                'updated_at' => Carbon::now(),
+                            ];
+                        } else {
+                            $vehicle->icon_color = $item['icon_color'] ?? null;
+                            $vehicle->tracker_id = $item['tracker_id'] ?? null;
+                            $vehicle->tracker_label = $item['tracker_label'] ?? null;
+                            $vehicle->label = $item['label'] ?? null;
+                            $vehicle->model = $item['model'] ?? null;
+                            $vehicle->type = $item['type'] ?? null;
+                            $vehicle->subtype = $item['subtype'] ?? null;
+                            $vehicle->color = $item['color'] ?? null;
+                            $vehicle->additional_info = $item['additional_info'] ?? null;
+                            $vehicle->reg_number = $item['reg_number'] ?? null;
+                            $vehicle->vin = $item['vin'] ?? null;
+                            $vehicle->updated_at = Carbon::now();
+                            $vehicle->save();
+                        }
                     }
                 });
 
@@ -150,8 +154,8 @@ class VehicleController extends BaseController
                                         //Url video
                                         if ($car['id_navixy']) {
                                             $vehicle = Vehicle::with('trackings')->where('tracker_id', $car['id_navixy'])->first();
-                                            if(!empty($vehicle)) {
-                                                if(!empty($vehicle->trackings)) {
+                                            if (!empty($vehicle)) {
+                                                if (!empty($vehicle->trackings)) {
                                                     $last = $vehicle->trackings->last();
                                                     $car['Fecha'] = Carbon::parse($last['last_updated'])->format('d/m/Y');
                                                     $car['Hora'] = Carbon::parse($last['last_updated'])->format('H:i:s');
@@ -159,11 +163,14 @@ class VehicleController extends BaseController
                                                     $car['Longitud'] = $last['lng'];
                                                     $car['Velocidad'] = $last['speed'] > 0 ? $last['sp'] / 10 : 0;
                                                     $car['Altitud'] = $last['alt'];
+                                                    $car['is_navixy'] = true;
                                                 }
                                             }
+                                        } else {
+                                            $car['is_navixy'] = false;
                                         }
 
-                                        if($car['video']) {
+                                        if ($car['video']) {
                                             $url_video = env('API_VIDEO_SEMOV');
                                             $url_video = str_replace('{IMEI}', $car['imei'], $url_video);
                                             $car['UrlCamara'] = $url_video;
@@ -209,6 +216,7 @@ class VehicleController extends BaseController
 
                     $json = collect($cars)->map(function ($item) {
                         return [
+                            "EsNavixy" => $item['is_navixy'],
                             "NombreProveedor" => $item['provider_name'],
                             "IDEmpresa" => 0,
                             "Empresa" => $item['company'],
@@ -274,6 +282,11 @@ class VehicleController extends BaseController
             $serviceSemov = app()->make(TrackerSemov::class);
             $user = User::find(auth()->user()->id);
 
+            $resultNavixy = $service->loginNavixy();
+            if (boolval($resultNavixy['success'])) {
+                $this->setHashToken($resultNavixy['hash']);
+            }
+
             //Set has semov
             $resultSemov = $serviceSemov->authSemov();
             $result = json_decode($resultSemov, true);
@@ -284,7 +297,6 @@ class VehicleController extends BaseController
 
             if ($user->hash_token_navixy) {
                 $result = $this->getTracking($service, $serviceSemov, $request);
-
                 if (isset($result['success']) && !boolval($result['success'])) {
                     $response = $service->loginNavixy();
                     if (boolval($response['success'])) {
@@ -300,7 +312,6 @@ class VehicleController extends BaseController
             } else {
                 $response = $service->loginNavixy();
                 if (boolval($response['success'])) {
-
                     $this->setHashToken($response['hash']);
                     $result = $this->getTracking($service, $serviceSemov, $request);
                     return $this->sendResponse($result, "Tracking Vehicles retrieved successful");
