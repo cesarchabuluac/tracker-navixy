@@ -303,19 +303,22 @@ class VehicleController extends BaseController
                     if (boolval($response['success'])) {
                         $this->setHashToken($response['hash']);
                         $result = $this->getTracking($service, $serviceSemov, $request);
-                        return $this->sendResponse($result, "Tracking Vehicles retrieved successfully");
+                        return response()->json($result);
+                        // return $this->sendResponse($result, "Tracking Vehicles retrieved successfully");
                     } else {
                         return $this->sendError($response['status']['description'], $response['errors'], 500);
                     }
                 }
 
-                return $this->sendResponse($result, "Tracking Vehicles retrieved successfully");
+                // return $this->sendResponse($result, "Tracking Vehicles retrieved successfully");
+                return response()->json($result);
             } else {
                 $response = $service->loginNavixy();
                 if (boolval($response['success'])) {
                     $this->setHashToken($response['hash']);
                     $result = $this->getTracking($service, $serviceSemov, $request);
-                    return $this->sendResponse($result, "Tracking Vehicles retrieved successful");
+                    // return $this->sendResponse($result, "Tracking Vehicles retrieved successful");
+                    return response()->json($result);
                 } else {
                     return $this->sendError($response['status']['description'], $response['errors'], 500);
                 }
