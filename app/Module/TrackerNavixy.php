@@ -17,9 +17,9 @@ class TrackerNavixy
     public function __construct()
     {
         $this->baseUri = env('API_NAVIXY');
-        // $id = auth()->user()->id;
-        // $user = User::find($id);
-        // $this->hashNavixy = $user->hash_token_navixy;
+        $id = auth()->user()->id;
+        $user = User::find($id);
+        $this->hashNavixy = $user->hash_token_navixy;
     }
 
     /**

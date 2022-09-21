@@ -48,9 +48,10 @@ class VehicleController extends BaseController
 
     private function getTracking(TrackerNavixy $service, TrackerSemov $serviceSemov, Request $request)
     {
+        $url_video = env('API_VIDEO_SEMOV');
+        $carsSemov = Car::get();
         $response = $service->listVehiclesNavixy();
         $response = json_decode($response, true);
-        Log::info(json_encode($response));
         try {
             if (boolval($response['success'])) {
 
@@ -108,7 +109,6 @@ class VehicleController extends BaseController
                 //Get tracking       
                 $response = $service->listTracking($trackersID);
                 $response = json_decode($response, true);
-                // Log::info(json_encode($response));
                 if (boolval($response['success'])) {
 
                     //Create Vehicles Tracking on database local
@@ -135,65 +135,89 @@ class VehicleController extends BaseController
 
                     VehicleTracker::insert($data);
 
-                    // $vehicles = VehicleTracker::with('vehicle')->whereIn('vehicle_id', $vehicleIds)->latest('last_updated')->get()->unique('vehicle_id');
-
                     //Get semov vehicles
-                    $userVehicle = $serviceSemov->listUserVehicle();
-                    $userVehicle = json_decode($userVehicle, true);
-                    // Log::info(json_encode($userVehicle));
-                    $cars = [];
-                    if (!empty($userVehicle)) {
-                        if (!empty($userVehicle['vehicles'])) {
-                            foreach ($userVehicle['vehicles'] as $key => $deviceList) {
-                                foreach ($deviceList['dl'] as $key => $device) {
-                                    $car = Car::where('imei', $device['id'])->first();
-                                    if (!empty($car)) {
-                                        $car['alarm'] = false;
-                                        $cars[] = $car;
+                    // $userVehicle = $serviceSemov->listUserVehicle();
+                    // $userVehicle = json_decode($userVehicle, true);
+                    // $cars = [];
+                    // if (!empty($userVehicle)) {
+                    //     if (!empty($userVehicle['vehicles'])) {
+                    //         foreach ($userVehicle['vehicles'] as $key => $deviceList) {
+                    //             foreach ($deviceList['dl'] as $key => $device) {
+                    //                 // $car = Car::where('imei', $device['id'])->first();
+                    //                 $car =  $carsSemov->filter(function ($item) use ($device) {
+                    //                     return $item['imei'] = $device['id'];
+                    //                 })->first();
 
-                                        //Url video
-                                        if ($car['id_navixy']) {
-                                            $vehicle = Vehicle::with('trackings')->where('tracker_id', $car['id_navixy'])->first();
-                                            if (!empty($vehicle)) {
-                                                if (!empty($vehicle->trackings)) {
-                                                    $last = $vehicle->trackings->last();
-                                                    $car['Fecha'] = Carbon::parse($last['last_updated'])->format('d/m/Y');
-                                                    $car['Hora'] = Carbon::parse($last['last_updated'])->format('H:i:s');
-                                                    $car['Latitud'] = $last['lat'];
-                                                    $car['Longitud'] = $last['lng'];
-                                                    $car['Velocidad'] = $last['speed'] > 0 ? $last['sp'] / 10 : 0;
-                                                    $car['Altitud'] = $last['alt'];
-                                                    $car['is_navixy'] = true;
-                                                }
-                                            }
-                                        } else {
-                                            $car['is_navixy'] = false;
-                                        }
+                    //                 if (!empty($car)) {
+                    //                     $car['alarm'] = false;
 
-                                        if ($car['video']) {
-                                            $url_video = env('API_VIDEO_SEMOV');
-                                            $url_video = str_replace('{IMEI}', $car['imei'], $url_video);
-                                            $car['UrlCamara'] = $url_video;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    //                     //Url video
+                    //                     if ($car['id_navixy']) {
+                    //                         $vehicle = Vehicle::with('trackings')->where('tracker_id', $car['id_navixy'])->first();
+                    //                         if (!empty($vehicle)) {
+                    //                             if (!empty($vehicle->trackings)) {
+                    //                                 $last = $vehicle->trackings->last();
+                    //                                 $car['Fecha'] = Carbon::parse($last['last_updated'])->format('d/m/Y');
+                    //                                 $car['Hora'] = Carbon::parse($last['last_updated'])->format('H:i:s');
+                    //                                 $car['Latitud'] = $last['lat'];
+                    //                                 $car['Longitud'] = $last['lng'];
+                    //                                 $car['Velocidad'] = $last['speed'] > 0 ? $last['sp'] / 10 : 0;
+                    //                                 $car['Altitud'] = $last['alt'];
+                    //                                 $car['is_navixy'] = true;
+                    //                             }
+                    //                         }
+                    //                     } else {
+                    //                         $car['is_navixy'] = false;
+                    //                     }
+
+                    //                     if ($car['video']) {
+                    //                         $url_video = env('API_VIDEO_SEMOV');
+                    //                         $url_video = str_replace('{IMEI}', $car['imei'], $url_video);
+                    //                         $car['UrlCamara'] = $url_video;
+                    //                     }
+
+                    //                     $cars[] = $car;
+                    //                 }
+                    //             }
+                    //         }
+                    //     }
+                    // }
 
                     //Device Status
                     $userDeviceStatus = $serviceSemov->listDeviceStatus();
                     $userDeviceStatus = json_decode($userDeviceStatus, true);
-                    // Log::info(json_encode($userDeviceStatus));
+
                     if (!empty($userDeviceStatus)) {
                         foreach ($userDeviceStatus['status'] as $key => $device) {
-                            foreach ($cars as $key => $car) {
+                            foreach ($carsSemov as $key => $car) {
                                 if ($car['imei'] == $device['id'] && empty($car['id_navixy'])) {
                                     $car['Fecha'] = Carbon::parse($device['gt'])->format('d/m/Y');
                                     $car['Hora'] = Carbon::parse($device['gt'])->format('H:i:s');
                                     $car['Latitud'] = $device['lat'];
                                     $car['Longitud'] = $device['lng'];
                                     $car['Velocidad'] = $device['sp'] > 0 ? $device['sp'] / 10 : 0;
+                                    if ($car['video']) {
+                                        $url_video = str_replace('{IMEI}', $car['imei'], $url_video);
+                                        $car['UrlCamara'] = $url_video;
+                                    }
+                                } else {
+                                    $vehicle = Vehicle::with('trackings')->where('tracker_id', $car['id_navixy'])->first();
+                                    if (!empty($vehicle)) {
+                                        if (!empty($vehicle->trackings)) {
+                                            $last = $vehicle->trackings->last();
+                                            $car['Fecha'] = Carbon::parse($last['last_updated'])->format('d/m/Y');
+                                            $car['Hora'] = Carbon::parse($last['last_updated'])->format('H:i:s');
+                                            $car['Latitud'] = $last['lat'];
+                                            $car['Longitud'] = $last['lng'];
+                                            $car['Velocidad'] = $last['speed'] > 0 ? $last['sp'] / 10 : 0;
+                                            $car['Altitud'] = $last['alt'];
+
+                                            if($car['video'] && !empty($car['id_cms'])) {
+                                                $url_video = str_replace('{IMEI}', $car['id_cms'], $url_video);
+                                                $car['UrlCamara'] = $url_video;
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -204,7 +228,7 @@ class VehicleController extends BaseController
                     $userVehicleAlarm = json_decode($userVehicleAlarm, true);
                     if (!empty($userVhicleAlarm)) {
                         if (!empty($userVhicleAlarm['alarmlist'])) {
-                            foreach ($cars as $key => $car) {
+                            foreach ($carsSemov as $key => $car) {
                                 foreach ($userVehicleAlarm as $key => $alarm) {
                                     if ($car['imei'] == $alarm['DevIDNO'] && $alarm['type'] == 19) {
                                         $car['alarm'] = true;
@@ -215,7 +239,7 @@ class VehicleController extends BaseController
                     }
 
                     // Log::info(json_encode($cars));
-                    $json = collect($cars)->map(function ($item) {
+                    $json = collect($carsSemov)->map(function ($item) {
                         return [
                             // "EsNavixy" => $item['is_navixy'],
                             "NombreProveedor" => $item['provider_name'],
@@ -233,7 +257,7 @@ class VehicleController extends BaseController
                             "Altitud" => $item['Altitud'] ?? 0,
                             "Velocidad" => $item['Velocidad'] ?? 0,
                             "Direccion" => 0,
-                            "BotonPanico" => $item['alarm'],
+                            "BotonPanico" => $item['alarm'] ?? false,
                             "UrlCamara" => $item['UrlCamara'],
                             "TipodeUnidad" => $item['unit_type'],
                             "Marca" => $item['brand'],
@@ -249,8 +273,6 @@ class VehicleController extends BaseController
                             "FechaVen" => null
                         ];
                     });
-
-
 
                     DB::commit();
 
