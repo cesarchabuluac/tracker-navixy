@@ -19,8 +19,8 @@ use App\Http\Controllers\API\VehicleController;
 
 Route::post('register', [RegisterController::class, 'register']);
 Route::post('login', [RegisterController::class, 'login']);
+Route::get('tracking', 'App\Http\Controllers\API\VehicleController@index');
 
-Route::middleware('auth:sanctum')->group( function () {   
-    Route::get('tracking', 'App\Http\Controllers\API\VehicleController@index');
+Route::middleware('auth:sanctum')->group( function () {    
     Route::get('semov', 'App\Http\Controllers\API\VehicleController@authSemov');
 });

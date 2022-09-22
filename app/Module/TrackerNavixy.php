@@ -17,9 +17,7 @@ class TrackerNavixy
     public function __construct()
     {
         $this->baseUri = env('API_NAVIXY');
-        $id = auth()->user()->id;
-        $user = User::find($id);
-        $this->hashNavixy = $user->hash_token_navixy;
+        $this->hashNavixy = session()->get('hash_token_navixy');
     }
 
     /**
@@ -56,7 +54,7 @@ class TrackerNavixy
     public function resolveAuthorization(&$queryParams, &$formParams, &$headers)
     {
         $headers = array(
-            'hash' => $this->hashNavixy,
+            'hash' =>  session()->get('hash_token_navixy'),
         );
     }
 
@@ -79,15 +77,11 @@ class TrackerNavixy
      */
     public function listVehiclesNavixy () {
 
-        $id = auth()->user()->id;
-        $user = User::find($id);
-        $this->hashNavixy = $user->hash_token_navixy;
-
         return $this->makeRequest(
             "GET",
             "vehicle/list/",
             [
-                'hash' => $this->hashNavixy,
+                'hash' =>  session()->get('hash_token_navixy'),
             ],
             [],
             $isJsonRequest = true
@@ -106,7 +100,7 @@ class TrackerNavixy
             "GET",
             "tracker/get_states",
             [
-                'hash' => $this->hashNavixy,
+                'hash' =>  session()->get('hash_token_navixy'),
                 'trackers' => json_encode($trackers),
             ],
             [],

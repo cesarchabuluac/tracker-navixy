@@ -31,7 +31,7 @@ class VehicleController extends BaseController
      */
     private function setHashToken($token)
     {
-        auth()->user()->update(['hash_token_navixy' => $token]);
+        session()->put('hash_token_navixy', $token);
     }
 
     /**
@@ -43,7 +43,7 @@ class VehicleController extends BaseController
      */
     private function setHasSessionSemov($session)
     {
-        auth()->user()->update(['hash_session_semov' => $session]);
+        session()->put('hash_session_semov', $session);
     }
 
     private function getTracking(TrackerNavixy $service, TrackerSemov $serviceSemov, Request $request)
@@ -133,55 +133,7 @@ class VehicleController extends BaseController
                         }
                     });
 
-                    VehicleTracker::insert($data);
-
-                    //Get semov vehicles
-                    // $userVehicle = $serviceSemov->listUserVehicle();
-                    // $userVehicle = json_decode($userVehicle, true);
-                    // $cars = [];
-                    // if (!empty($userVehicle)) {
-                    //     if (!empty($userVehicle['vehicles'])) {
-                    //         foreach ($userVehicle['vehicles'] as $key => $deviceList) {
-                    //             foreach ($deviceList['dl'] as $key => $device) {
-                    //                 // $car = Car::where('imei', $device['id'])->first();
-                    //                 $car =  $carsSemov->filter(function ($item) use ($device) {
-                    //                     return $item['imei'] = $device['id'];
-                    //                 })->first();
-
-                    //                 if (!empty($car)) {
-                    //                     $car['alarm'] = false;
-
-                    //                     //Url video
-                    //                     if ($car['id_navixy']) {
-                    //                         $vehicle = Vehicle::with('trackings')->where('tracker_id', $car['id_navixy'])->first();
-                    //                         if (!empty($vehicle)) {
-                    //                             if (!empty($vehicle->trackings)) {
-                    //                                 $last = $vehicle->trackings->last();
-                    //                                 $car['Fecha'] = Carbon::parse($last['last_updated'])->format('d/m/Y');
-                    //                                 $car['Hora'] = Carbon::parse($last['last_updated'])->format('H:i:s');
-                    //                                 $car['Latitud'] = $last['lat'];
-                    //                                 $car['Longitud'] = $last['lng'];
-                    //                                 $car['Velocidad'] = $last['speed'] > 0 ? $last['sp'] / 10 : 0;
-                    //                                 $car['Altitud'] = $last['alt'];
-                    //                                 $car['is_navixy'] = true;
-                    //                             }
-                    //                         }
-                    //                     } else {
-                    //                         $car['is_navixy'] = false;
-                    //                     }
-
-                    //                     if ($car['video']) {
-                    //                         $url_video = env('API_VIDEO_SEMOV');
-                    //                         $url_video = str_replace('{IMEI}', $car['imei'], $url_video);
-                    //                         $car['UrlCamara'] = $url_video;
-                    //                     }
-
-                    //                     $cars[] = $car;
-                    //                 }
-                    //             }
-                    //         }
-                    //     }
-                    // }
+                    VehicleTracker::insert($data);                    
 
                     //Device Status
                     $userDeviceStatus = $serviceSemov->listDeviceStatus();
@@ -303,7 +255,7 @@ class VehicleController extends BaseController
             //Service Navixy
             $service = app()->make(TrackerNavixy::class);
             $serviceSemov = app()->make(TrackerSemov::class);
-            $user = User::find(auth()->user()->id);
+            // $user = User::find(auth()->user()->id);
 
             $resultNavixy = $service->loginNavixy();
             if (boolval($resultNavixy['success'])) {
@@ -318,7 +270,7 @@ class VehicleController extends BaseController
             }
 
 
-            if ($user->hash_token_navixy) {
+            if (session()->get('hash_token_navixy')) {
                 $result = $this->getTracking($service, $serviceSemov, $request);
                 if (isset($result['success']) && !boolval($result['success'])) {
                     $response = $service->loginNavixy();

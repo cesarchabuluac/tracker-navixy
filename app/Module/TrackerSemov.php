@@ -18,10 +18,7 @@ class TrackerSemov
     public function __construct()
     {
         $this->baseUri = env('API_SEMOV');
-
-        $id = auth()->user()->id;
-        $user = User::find($id);
-        $this->hashSemov = $user->hash_session_semov;
+        $this->hashSemov = session()->get('hash_session_semov');
     }
 
     public function authSemov()
@@ -51,7 +48,7 @@ class TrackerSemov
     public function resolveAuthorization(&$queryParams, &$formParams, &$headers)
     {
         $headers = array(
-            'jsession' => $this->hashSemov,
+            'jsession' => session()->get('hash_session_semov'),
         );
     }
 
@@ -78,7 +75,7 @@ class TrackerSemov
             "GET",
             "/StandardApiAction_queryUserVehicle.action",
             [
-                'jsession' => $this->hashSemov,
+                'jsession' => session()->get('hash_session_semov'),
             ],
             [],
             $isJsonRequest = true
@@ -98,7 +95,7 @@ class TrackerSemov
             "GET",
             "/StandardApiAction_getDeviceStatus.action",
             [
-                'jsession' => $this->hashSemov,
+                'jsession' => session()->get('hash_session_semov'),
             ],
             [],
             $isJsonRequest = true
@@ -116,7 +113,7 @@ class TrackerSemov
             "GET",
             "/StandardApiAction_vehicleAlarm.action",
             [
-                'jsession' => $this->hashSemov,
+                'jsession' => session()->get('hash_session_semov'),
             ],
             [],
             $isJsonRequest = true
