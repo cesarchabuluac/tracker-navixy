@@ -101,7 +101,6 @@ class VehicleController extends BaseController
                         }
                     }
                 });
-
                 if (!empty($data)) {
                     Vehicle::insert($data);
                 }
@@ -141,6 +140,7 @@ class VehicleController extends BaseController
 
                     if (!empty($userDeviceStatus)) {
                         foreach ($userDeviceStatus['status'] as $key => $device) {
+                            Log::warning($device);
                             foreach ($carsSemov as $key => $car) {
                                 if ($car['imei'] == $device['id'] && empty($car['id_navixy'])) {
                                     $car['Fecha'] = Carbon::parse($device['gt'])->format('d/m/Y');
@@ -204,8 +204,8 @@ class VehicleController extends BaseController
                             "EcoNumero" => $item['economic_number'],
                             "Placa" => $item['license_plate'],
                             "IMEI" => $item['imei'],
-                            "Latitud" => $item['Latitud'] ?? 0,
-                            "Longitud" => $item['Longitud'] ?? 0,
+                            "Latitud" => floatval($item['Latitud']) ?? 0,
+                            "Longitud" => floatval($item['Longitud']) ?? 0,
                             "Altitud" => $item['Altitud'] ?? 0,
                             "Velocidad" => $item['Velocidad'] ?? 0,
                             "Direccion" => 0,
