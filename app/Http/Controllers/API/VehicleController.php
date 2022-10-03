@@ -140,7 +140,6 @@ class VehicleController extends BaseController
 
                     if (!empty($userDeviceStatus)) {
                         foreach ($userDeviceStatus['status'] as $key => $device) {
-                            Log::warning($device);
                             foreach ($carsSemov as $key => $car) {
                                 if ($car['imei'] == $device['id'] && empty($car['id_navixy'])) {
                                     $car['Fecha'] = Carbon::parse($device['gt'])->format('d/m/Y');
@@ -192,6 +191,27 @@ class VehicleController extends BaseController
 
                     // Log::info(json_encode($cars));
                     $json = collect($carsSemov)->map(function ($item) {
+
+                        // $mitad = strlen($nombre ) / 2; //Cantidad de letras en $nombre dividida entre 2 
+                        // $parte1 = substr($nombre , 0, $mitad); 
+                        // $parte2 = substr($nombre , $mitad); 
+                        $latitud = explode(".", $item['Latitud']);
+                        if(!isset($latitud[1]) && !empty($latitud)) {
+                            $secondString = substr($item['Latitud'], 0, 2);
+                            $lastString = substr($item['Latitud'], 2, 100);
+                            $item['Latitud'] = floatval($secondString . "." . $lastString) * 1;
+                        }
+
+                        $longitud = explode("-", $item['Longitud']);
+                        if(isset($longitud[1]) && !empty($longitud[1])) {
+                            $lng = explode(".", $longitud[1]);
+                            if(!isset($lng[1]) && !empty($lng)) {
+                                $secondString = substr($longitud[1], 0, 2);
+                                $lastString = substr($longitud[1], 2, 100);
+                                $item['Longitud'] = -floatval($secondString . "." . $lastString) * 1;
+                            }
+                        }
+
                         return [
                             // "EsNavixy" => $item['is_navixy'],
                             "NombreProveedor" => $item['provider_name'],
