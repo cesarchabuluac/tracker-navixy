@@ -191,10 +191,6 @@ class VehicleController extends BaseController
 
                     // Log::info(json_encode($cars));
                     $json = collect($carsSemov)->map(function ($item) {
-
-                        // $mitad = strlen($nombre ) / 2; //Cantidad de letras en $nombre dividida entre 2 
-                        // $parte1 = substr($nombre , 0, $mitad); 
-                        // $parte2 = substr($nombre , $mitad); 
                         $latitud = explode(".", $item['Latitud']);
                         if(!isset($latitud[1]) && !empty($latitud)) {
                             $secondString = substr($item['Latitud'], 0, 2);
