@@ -285,34 +285,9 @@ class VehicleController extends BaseController
                 $this->setHasSessionSemov($result['jsession']);
             }
 
-
-            if (session()->get('hash_token_navixy')) {
-                $result = $this->getTracking($service, $serviceSemov, $request);
-                if (isset($result['success']) && !boolval($result['success'])) {
-                    $response = $service->loginNavixy();
-                    if (boolval($response['success'])) {
-                        $this->setHashToken($response['hash']);
-                        $result = $this->getTracking($service, $serviceSemov, $request);
-                        return response()->json($result);
-                        // return $this->sendResponse($result, "Tracking Vehicles retrieved successfully");
-                    } else {
-                        return $this->sendError($response['status']['description'], $response['errors'], 500);
-                    }
-                }
-
-                // return $this->sendResponse($result, "Tracking Vehicles retrieved successfully");
-                return response()->json($result);
-            } else {
-                $response = $service->loginNavixy();
-                if (boolval($response['success'])) {
-                    $this->setHashToken($response['hash']);
-                    $result = $this->getTracking($service, $serviceSemov, $request);
-                    // return $this->sendResponse($result, "Tracking Vehicles retrieved successful");
-                    return response()->json($result);
-                } else {
-                    return $this->sendError($response['status']['description'], $response['errors'], 500);
-                }
-            }
+            $result = $this->getTracking($service, $serviceSemov, $request);
+            return response()->json($result);
+           
         } catch (Exception $ex) {
             DB::rollBack();
             return $this->sendError($ex->getMessage(), 500);
